@@ -1,0 +1,17 @@
+kind: BuildConfing
+apiVersion: v1
+metadata:
+  name: activemq-build
+spec:
+  triggers:
+    - type: GitHub
+      github:
+        secret: secret
+  source:
+    type: Git
+    git:
+      uri: https://github.com/piotrwalkusz1/openshift-test
+    contextDir: activemq
+  strategy:
+    type: Docker
+
