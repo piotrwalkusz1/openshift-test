@@ -1,17 +1,57 @@
-kind: BuildConfing
 apiVersion: v1
+kind: Template
 metadata:
-  name: activemq-build
-spec:
-  triggers:
-    - type: GitHub
-      github:
-        secret: secret
-  source:
-    type: Git
-    git:
-      uri: https://github.com/piotrwalkusz1/openshift-test
-    contextDir: activemq
-  strategy:
-    type: Docker
-
+  name: activemq-template
+objects:
+  - kind: ImageStream
+    apiVersion: v1
+    metadata:
+      name: myactivemq
+  - kind: BuildConfig
+    apiVersion: v1
+    metadata:
+      name: activemq-build
+    spec:
+      triggers:
+        - type: ConfigChange
+      source:
+        type: Git
+        git:
+          uri: https://github.com/piotrwalkusz1/openshift-test
+        contextDir: activemq
+      strategy:
+        type: Docker
+      output:
+        to:
+          kind: ImageStreamTag
+          name: myactivemq:latest
+  - kind: StatefulSet
+    apiVersion: apps/v1
+    metadata:
+      name: activemq-statefulset
+    spec:
+      template:
+        metadata:
+          labels:
+            app: activemq
+        spec:
+          containers:
+            - name: activemq
+              image: 172.30.1.1:5000/myproject/myactivemq:latest
+              ports:
+                - containerPort: 61616
+              volumeMounts:
+                - name: activemq-data
+                  mountPath: /home/activemq/apache-activemq/data
+      selector:
+        matchLabels:
+          app: activemq
+      replicas: 3
+      volumeClaimTemplates:
+        - metadata:
+            name: activemq-data
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 1Gi
